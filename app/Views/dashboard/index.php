@@ -136,6 +136,12 @@ $rolNegocio      = session()->get('rol_negocio') ?? 'propietario';
             color: #115e59;
             font-size: 0.88rem;
         }
+        .quick-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 16px;
+        }
         @media (max-width: 480px) {
             .shell { padding: 16px 12px 30px; }
             .card { padding: 20px 16px; }
@@ -181,7 +187,12 @@ $rolNegocio      = session()->get('rol_negocio') ?? 'propietario';
             </div>
 
             <div class="notice">
-                La gestión de productos, categorías y pedidos estará disponible en los siguientes bloques.
+                La gestión de productos y pedidos estará disponible en los siguientes bloques.
+            </div>
+
+            <div class="quick-links">
+                <a class="logout" href="<?= base_url('negocio/perfil') ?>">Mi perfil</a>
+                <a class="logout" href="<?= base_url('negocio/categorias') ?>">Mis categorías</a>
             </div>
         </section>
     </main>

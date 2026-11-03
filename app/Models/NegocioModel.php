@@ -15,9 +15,11 @@ class NegocioModel extends Model
     protected $allowedFields    = [
         'nombre_comercial',
         'slug',
+        'descripcion',
         'direccion',
         'distrito_id',
         'telefono_principal',
+        'horario_texto',
         'siguiente_numero_pedido',
         'activo',
         'created_by',
@@ -28,4 +30,21 @@ class NegocioModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'modified_at';
     protected $deletedField  = 'deleted_at';
+
+    public function actualizarPerfil(int $idNegocio, array $datos): bool
+    {
+        return $this->update($idNegocio, $datos) !== false;
+    }
+
+    public function slugDisponible(string $slug, ?int $excluirId = null): bool
+    {
+        $builder = $this->withDeleted()
+            ->where('slug', $slug);
+
+        if ($excluirId !== null) {
+            $builder->where('id_negocio !=', $excluirId);
+        }
+
+        return $builder->countAllResults() === 0;
+    }
 }

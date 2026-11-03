@@ -22,3 +22,15 @@ $routes->get('auth/reset', 'Auth\RecuperarPassword::reset');
 $routes->post('auth/reset', 'Auth\RecuperarPassword::actualizar');
 
 $routes->get('dashboard', 'Dashboard::index', ['filter' => 'auth']);
+
+$routes->group('negocio', ['filter' => 'auth'], static function (RouteCollection $routes): void {
+    $routes->get('perfil', 'Negocio\Perfil::index');
+    $routes->post('perfil', 'Negocio\Perfil::guardar');
+
+    $routes->get('categorias', 'Negocio\Categorias::index');
+    $routes->get('categorias/crear', 'Negocio\Categorias::crear');
+    $routes->post('categorias/crear', 'Negocio\Categorias::guardar');
+    $routes->get('categorias/editar/(:num)', 'Negocio\Categorias::editar/$1');
+    $routes->post('categorias/editar/(:num)', 'Negocio\Categorias::actualizar/$1');
+    $routes->get('categorias/eliminar/(:num)', 'Negocio\Categorias::eliminar/$1');
+});
