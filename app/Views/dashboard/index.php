@@ -2,6 +2,8 @@
 $nombreComercial = session()->get('nombre_comercial') ?? $negocio['nombre_comercial'];
 $email           = session()->get('email') ?? '';
 $rolNegocio      = session()->get('rol_negocio') ?? 'propietario';
+$flashError      = session()->getFlashdata('error');
+$flashSuccess    = session()->getFlashdata('success');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -101,6 +103,23 @@ $rolNegocio      = session()->get('rol_negocio') ?? 'propietario';
             color: var(--muted);
             font-size: 0.94rem;
         }
+        .alert {
+            margin: 16px 0 0;
+            padding: 11px 13px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .alert-error {
+            color: #991b1b;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+        }
+        .alert-success {
+            color: #166534;
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+        }
         .meta-list {
             display: grid;
             gap: 0;
@@ -163,6 +182,13 @@ $rolNegocio      = session()->get('rol_negocio') ?? 'propietario';
             <h1><?= esc($nombreComercial) ?></h1>
             <p class="subtitle">Tu cuenta está activa y lista para comenzar.</p>
 
+            <?php if ($flashError): ?>
+                <div class="alert alert-error"><?= esc($flashError) ?></div>
+            <?php endif; ?>
+            <?php if ($flashSuccess): ?>
+                <div class="alert alert-success"><?= esc($flashSuccess) ?></div>
+            <?php endif; ?>
+
             <div class="meta-list">
                 <div class="meta-item">
                     <span>Correo</span>
@@ -187,12 +213,15 @@ $rolNegocio      = session()->get('rol_negocio') ?? 'propietario';
             </div>
 
             <div class="notice">
-                La gestión de productos y pedidos estará disponible en los siguientes bloques.
+                Revisa y gestiona los pedidos que llegan desde tu catálogo digital.
             </div>
 
             <div class="quick-links">
                 <a class="logout" href="<?= base_url('negocio/perfil') ?>">Mi perfil</a>
                 <a class="logout" href="<?= base_url('negocio/categorias') ?>">Mis categorías</a>
+                <a class="logout" href="<?= base_url('negocio/productos') ?>">Mis productos</a>
+                <a class="logout" href="<?= base_url('negocio/pedidos') ?>">Mis Pedidos</a>
+                <a class="logout" href="<?= base_url('negocio/mi-plan') ?>">Mi Plan</a>
             </div>
         </section>
     </main>

@@ -24,4 +24,11 @@ class NegocioUsuarioModel extends Model
     protected $useTimestamps = true;
     protected $createdField  = 'created_at';
     protected $updatedField  = 'modified_at';
+
+    public function contarActivosPorNegocio(int $idNegocio): int
+    {
+        return $this->where('negocio_id', $idNegocio)
+            ->where('activo', 1)
+            ->countAllResults();
+    }
 }

@@ -104,6 +104,38 @@ class CategoriaModel extends Model
         ));
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function listarActivasPorNegocio(int $idNegocio): array
+    {
+        return array_values(array_filter(
+            $this->getArbolPorNegocio($idNegocio),
+            static fn (array $categoria): bool => (int) $categoria['activo'] === 1
+        ));
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function listarActivasConProductosVisibles(int $idNegocio): array
+    {
+        return db_connect()
+            ->table('categorias c')
+            ->select('c.id_categoria, c.nombre, c.slug, c.categoria_padre_id')
+            ->where('c.negocio_id', $idNegocio)
+            ->where('c.activo', 1)
+            ->where('c.deleted_at IS NULL', null, false)
+            ->where(
+                'EXISTS (SELECT 1 FROM v_productos_publicos vp WHERE vp.negocio_id = c.negocio_id AND vp.categoria_id = c.id_categoria)',
+                null,
+                false
+            )
+            ->orderBy('c.nombre', 'ASC')
+            ->get()
+            ->getResultArray();
+    }
+
     public function tieneProductos(int $idCategoria, int $idNegocio): bool
     {
         return db_connect()

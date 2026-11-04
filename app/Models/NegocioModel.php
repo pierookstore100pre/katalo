@@ -47,4 +47,14 @@ class NegocioModel extends Model
 
         return $builder->countAllResults() === 0;
     }
+
+    public function obtenerSiguienteNumeroConBloqueo(int $idNegocio): ?int
+    {
+        $fila = $this->db->query(
+            'SELECT siguiente_numero_pedido FROM negocios WHERE id_negocio = ? AND deleted_at IS NULL FOR UPDATE',
+            [$idNegocio]
+        )->getRowArray();
+
+        return $fila === null ? null : (int) $fila['siguiente_numero_pedido'];
+    }
 }

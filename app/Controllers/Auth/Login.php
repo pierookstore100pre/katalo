@@ -72,6 +72,8 @@ class Login extends BaseController
             );
         }
 
+        $rolPlataforma = $this->obtenerRolPlataforma((int) $usuario['id_usuario']);
+
         $membresias = $this->negocioUsuarioModel
             ->where('usuario_id', (int) $usuario['id_usuario'])
             ->where('activo', 1)
@@ -87,6 +89,28 @@ class Login extends BaseController
         $membresia ??= $membresias[0] ?? null;
 
         if ($membresia === null) {
+            if ($rolPlataforma === 'administrador') {
+                $this->usuarioModel->update((int) $usuario['id_usuario'], [
+                    'intentos_fallidos' => 0,
+                    'ultimo_login'      => date('Y-m-d H:i:s'),
+                ]);
+
+                $this->registrarIngreso((int) $usuario['id_usuario'], null);
+
+                $session = session();
+                $session->regenerate();
+                $session->set([
+                    'id_usuario'       => (int) $usuario['id_usuario'],
+                    'id_negocio'       => 0,
+                    'rol_negocio'      => null,
+                    'rol_plataforma'   => $rolPlataforma,
+                    'nombre_comercial' => null,
+                    'email'            => $usuario['email'],
+                ]);
+
+                return redirect()->to(base_url('admin/pagos'));
+            }
+
             return redirect()->back()->withInput()->with(
                 'error',
                 'Tu cuenta no tiene un negocio activo asociado. Contacta al administrador.'
@@ -110,20 +134,7 @@ class Login extends BaseController
             'ultimo_login'      => date('Y-m-d H:i:s'),
         ]);
 
-        try {
-            $this->logModel->insert([
-                'usuario_id' => (int) $usuario['id_usuario'],
-                'negocio_id' => (int) $negocio['id_negocio'],
-                'accion'     => 'login',
-                'tabla_afectada' => 'usuarios',
-                'registro_id' => (int) $usuario['id_usuario'],
-                'descripcion' => 'Inicio de sesión.',
-                'ip_address' => $this->request->getIPAddress(),
-                'user_agent' => mb_substr($this->request->getUserAgent()->getAgentString(), 0, 255),
-            ]);
-        } catch (Throwable $e) {
-            log_message('error', 'No se pudo registrar el log de login: {message}', ['message' => $e->getMessage()]);
-        }
+        $this->registrarIngreso((int) $usuario['id_usuario'], (int) $negocio['id_negocio']);
 
         $session = session();
         $session->regenerate();
@@ -131,10 +142,55 @@ class Login extends BaseController
             'id_usuario'       => (int) $usuario['id_usuario'],
             'id_negocio'       => (int) $negocio['id_negocio'],
             'rol_negocio'      => $membresia['rol_negocio'],
+            'rol_plataforma'   => $rolPlataforma,
             'nombre_comercial' => $negocio['nombre_comercial'],
             'email'            => $usuario['email'],
         ]);
 
         return redirect()->to(base_url('dashboard'));
+    }
+
+    private function obtenerRolPlataforma(int $idUsuario): string
+    {
+        $roles = db_connect()->table('usuario_roles ur')
+            ->select('r.nombre')
+            ->join('roles r', 'r.id_rol = ur.rol_id')
+            ->where('ur.usuario_id', $idUsuario)
+            ->where('r.activo', 1)
+            ->where('r.deleted_at', null)
+            ->get()
+            ->getResultArray();
+
+        $rolPlataforma = 'usuario_negocio';
+
+        foreach ($roles as $rol) {
+            if ($rol['nombre'] === 'administrador') {
+                return 'administrador';
+            }
+
+            if ($rol['nombre'] === 'usuario_negocio') {
+                $rolPlataforma = 'usuario_negocio';
+            }
+        }
+
+        return $rolPlataforma;
+    }
+
+    private function registrarIngreso(int $idUsuario, ?int $idNegocio): void
+    {
+        try {
+            $this->logModel->insert([
+                'usuario_id'     => $idUsuario,
+                'negocio_id'     => $idNegocio,
+                'accion'         => 'login',
+                'tabla_afectada' => 'usuarios',
+                'registro_id'    => $idUsuario,
+                'descripcion'    => 'Inicio de sesión.',
+                'ip_address'     => $this->request->getIPAddress(),
+                'user_agent'     => mb_substr($this->request->getUserAgent()->getAgentString(), 0, 255),
+            ]);
+        } catch (Throwable $e) {
+            log_message('error', 'No se pudo registrar el log de login: {message}', ['message' => $e->getMessage()]);
+        }
     }
 }

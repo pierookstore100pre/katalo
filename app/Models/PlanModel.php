@@ -33,4 +33,25 @@ class PlanModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'modified_at';
     protected $deletedField  = 'deleted_at';
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function obtenerPorSlug(string $slug): ?array
+    {
+        return $this->where('slug', $slug)->first();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function obtenerVigentePorNegocio(int $idNegocio): ?array
+    {
+        return $this->select('planes.*')
+            ->join('suscripciones', 'suscripciones.plan_id = planes.id_plan')
+            ->where('suscripciones.negocio_id', $idNegocio)
+            ->whereIn('suscripciones.estado', ['prueba', 'activa'])
+            ->where('suscripciones.deleted_at', null)
+            ->first();
+    }
 }

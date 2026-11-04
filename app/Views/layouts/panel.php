@@ -6,6 +6,12 @@ $ruta    = trim(service('request')->getPath(), '/');
 $esDashboard  = $ruta === 'dashboard';
 $esPerfil     = str_starts_with($ruta, 'negocio/perfil');
 $esCategorias = str_starts_with($ruta, 'negocio/categorias');
+$esProductos  = str_starts_with($ruta, 'negocio/productos');
+$esPedidos    = str_starts_with($ruta, 'negocio/pedidos');
+$esMiPlan     = str_starts_with($ruta, 'negocio/mi-plan');
+$esAdminPagos = str_starts_with($ruta, 'admin/pagos');
+$esAdmin      = session()->get('rol_plataforma') === 'administrador';
+$tieneNegocio = (int) session()->get('id_negocio') > 0;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -426,11 +432,12 @@ $esCategorias = str_starts_with($ruta, 'negocio/categorias');
             .category-actions { justify-content: flex-start; }
         }
     </style>
+    <?= $this->renderSection('styles') ?>
 </head>
 <body>
     <main class="shell">
         <div class="topbar">
-            <a class="brand" href="<?= base_url('dashboard') ?>">
+            <a class="brand" href="<?= base_url($esAdmin && ! $tieneNegocio ? 'admin/pagos' : 'dashboard') ?>">
                 <span class="brand-mark">K</span>
                 <span>Katalo.pe</span>
             </a>
@@ -438,9 +445,17 @@ $esCategorias = str_starts_with($ruta, 'negocio/categorias');
         </div>
 
         <nav class="panel-nav" aria-label="Menú del panel">
-            <a href="<?= base_url('dashboard') ?>" class="<?= $esDashboard ? 'active' : '' ?>">Panel</a>
-            <a href="<?= base_url('negocio/perfil') ?>" class="<?= $esPerfil ? 'active' : '' ?>">Mi perfil</a>
-            <a href="<?= base_url('negocio/categorias') ?>" class="<?= $esCategorias ? 'active' : '' ?>">Mis categorías</a>
+            <?php if ($tieneNegocio): ?>
+                <a href="<?= base_url('dashboard') ?>" class="<?= $esDashboard ? 'active' : '' ?>">Panel</a>
+                <a href="<?= base_url('negocio/perfil') ?>" class="<?= $esPerfil ? 'active' : '' ?>">Mi perfil</a>
+                <a href="<?= base_url('negocio/categorias') ?>" class="<?= $esCategorias ? 'active' : '' ?>">Mis categorías</a>
+                <a href="<?= base_url('negocio/productos') ?>" class="<?= $esProductos ? 'active' : '' ?>">Mis productos</a>
+                <a href="<?= base_url('negocio/pedidos') ?>" class="<?= $esPedidos ? 'active' : '' ?>">Mis Pedidos</a>
+                <a href="<?= base_url('negocio/mi-plan') ?>" class="<?= $esMiPlan ? 'active' : '' ?>">Mi Plan</a>
+            <?php endif; ?>
+            <?php if ($esAdmin): ?>
+                <a href="<?= base_url('admin/pagos') ?>" class="<?= $esAdminPagos ? 'active' : '' ?>">Pagos</a>
+            <?php endif; ?>
         </nav>
 
         <?php if ($success !== null): ?>
