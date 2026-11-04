@@ -83,6 +83,8 @@ $routes->group('admin', ['filter' => ['auth', 'admin']], static function (RouteC
     $routes->post('negocios/(:num)/suspender', 'Admin\Negocios::suspender/$1');
     $routes->post('negocios/(:num)/reactivar', 'Admin\Negocios::reactivar/$1');
 
+    $routes->post('impersonar/(:num)', 'Admin\Impersonacion::iniciar/$1');
+
     $routes->get('moderacion', 'Admin\Moderacion::index');
     $routes->post('moderacion/producto/(:num)/aprobar', 'Admin\Moderacion::aprobarProducto/$1');
     $routes->post('moderacion/producto/(:num)/rechazar', 'Admin\Moderacion::rechazarProducto/$1');
@@ -109,6 +111,10 @@ $routes->group('admin', ['filter' => ['auth', 'admin']], static function (RouteC
     $routes->post('pagos/(:num)/confirmar', 'Admin\Pagos::confirmar/$1');
     $routes->post('pagos/(:num)/rechazar', 'Admin\Pagos::rechazar/$1');
 });
+
+// La salida de la impersonación solo usa AuthFilter: durante la impersonación
+// rol_plataforma es 'usuario_negocio' y AdminFilter la bloquearía.
+$routes->post('admin/impersonacion/salir', 'Admin\Impersonacion::salir', ['filter' => 'auth']);
 
 // Catálogo público. Se registra al final para no colisionar con /auth,
 // /negocio, /admin, /dashboard ni /c/imagen. Los slugs reservados se

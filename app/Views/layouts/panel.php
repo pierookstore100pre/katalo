@@ -12,6 +12,7 @@ $esMiPlan     = str_starts_with($ruta, 'negocio/mi-plan');
 $esAdminPagos = str_starts_with($ruta, 'admin/pagos');
 $esAdmin      = session()->get('rol_plataforma') === 'administrador';
 $tieneNegocio = (int) session()->get('id_negocio') > 0;
+$impersonando = session()->get('impersonando') === true;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -51,6 +52,47 @@ $tieneNegocio = (int) session()->get('id_negocio') > 0;
         }
 
         a { color: var(--primary-dark); font-weight: 600; }
+
+        body.has-impersonation { padding-top: 64px; }
+
+        .impersonation-banner {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            z-index: 60;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 8px 12px;
+            padding: 10px 14px;
+            background: linear-gradient(90deg, #b91c1c, #a16207);
+            color: #fff;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22);
+        }
+
+        .impersonation-banner form { margin: 0; }
+
+        .impersonation-banner .btn-exit {
+            min-height: 32px;
+            padding: 5px 11px;
+            border: 1px solid rgba(255, 255, 255, 0.75);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+            font: inherit;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .impersonation-banner .btn-exit:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
 
         .shell {
             width: 100%;
@@ -428,13 +470,26 @@ $tieneNegocio = (int) session()->get('id_negocio') > 0;
             }
             .form-actions .btn { width: 100%; max-width: 880px; margin: 0 auto; }
             body { padding-bottom: 86px; }
+            body.has-impersonation { padding-top: 96px; }
             .category-row { align-items: flex-start; flex-direction: column; }
             .category-actions { justify-content: flex-start; }
         }
     </style>
     <?= $this->renderSection('styles') ?>
 </head>
-<body>
+<body class="<?= $impersonando ? 'has-impersonation' : '' ?>">
+    <?php if ($impersonando): ?>
+        <div class="impersonation-banner" role="status">
+            <span>
+                Estás viendo como <strong><?= esc((string) session()->get('nombre_comercial')) ?></strong>.
+            </span>
+            <form action="<?= base_url('admin/impersonacion/salir') ?>" method="post">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn-exit">Salir de impersonación</button>
+            </form>
+        </div>
+    <?php endif; ?>
+
     <main class="shell">
         <div class="topbar">
             <a class="brand" href="<?= base_url($esAdmin && ! $tieneNegocio ? 'admin/pagos' : 'dashboard') ?>">

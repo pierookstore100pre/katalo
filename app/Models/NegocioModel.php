@@ -156,6 +156,28 @@ class NegocioModel extends Model
     /**
      * @return array<string, mixed>|null
      */
+    public function obtenerPropietarioActivo(int $idNegocio): ?array
+    {
+        return $this->db->query(
+            'SELECT nu.usuario_id, u.email, p.nombres, p.apellidos, '
+            . 'EXISTS('
+            . '    SELECT 1 FROM usuario_roles ur '
+            . '    JOIN roles r ON r.id_rol = ur.rol_id '
+            . "    WHERE ur.usuario_id = u.id_usuario AND r.nombre = 'administrador' "
+            . '      AND r.activo = 1 AND r.deleted_at IS NULL'
+            . ') AS es_administrador '
+            . 'FROM negocio_usuarios nu '
+            . 'JOIN usuarios u ON u.id_usuario = nu.usuario_id '
+            . 'JOIN personas p ON p.id_persona = u.persona_id '
+            . "WHERE nu.negocio_id = ? AND nu.rol_negocio = 'propietario' AND nu.activo = 1 "
+            . 'LIMIT 1',
+            [$idNegocio]
+        )->getRowArray();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
     public function obtenerDetalleAdmin(int $idNegocio): ?array
     {
         return $this->db->query(

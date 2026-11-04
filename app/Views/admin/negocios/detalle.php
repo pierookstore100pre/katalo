@@ -9,6 +9,8 @@ $propietario = trim(
     . ' ' . (string) ($negocio['propietario_apellidos'] ?? '')
 );
 
+$tienePropietarioActivo = ! empty($negocio['propietario_email']);
+
 $etiquetasEstadoPedido = [
     'nuevo'      => 'Nuevo',
     'confirmado' => 'Confirmado',
@@ -47,6 +49,21 @@ $estadoSuscripcion = [
         </div>
 
         <div class="actions">
+            <form action="<?= base_url('admin/impersonar/' . (int) $negocio['id_negocio']) ?>" method="post">
+                <?= csrf_field() ?>
+                <?php if ($tienePropietarioActivo): ?>
+                    <button type="submit" class="btn btn-secondary">Ver como este negocio</button>
+                <?php else: ?>
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        disabled
+                        title="Sin propietario activo"
+                        style="opacity:.55;cursor:not-allowed"
+                    >Ver como este negocio</button>
+                <?php endif; ?>
+            </form>
+
             <?php if ($activo): ?>
                 <form action="<?= base_url('admin/negocios/' . (int) $negocio['id_negocio'] . '/suspender') ?>" method="post">
                     <?= csrf_field() ?>
