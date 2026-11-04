@@ -28,4 +28,11 @@ class UsuarioModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'modified_at';
     protected $deletedField  = 'deleted_at';
+
+    public function obtenerEmailPorId(int $idUsuario): ?string
+    {
+        $fila = $this->select('email')->find($idUsuario);
+
+        return $fila === null ? null : (string) $fila['email'];
+    }
 }

@@ -108,7 +108,7 @@ class Login extends BaseController
                     'email'            => $usuario['email'],
                 ]);
 
-                return redirect()->to(base_url('admin/pagos'));
+                return redirect()->to(base_url('admin/dashboard'));
             }
 
             return redirect()->back()->withInput()->with(

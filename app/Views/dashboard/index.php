@@ -223,6 +223,7 @@ $flashSuccess    = session()->getFlashdata('success');
                 <a class="logout" href="<?= base_url('negocio/productos') ?>">Mis productos</a>
                 <a class="logout" href="<?= base_url('negocio/pedidos') ?>">Mis Pedidos</a>
                 <a class="logout" href="<?= base_url('negocio/mi-plan') ?>">Mi Plan</a>
+                <a class="logout" href="<?= base_url('negocio/logs') ?>">Registro de actividad</a>
             </div>
         </section>
     </main>

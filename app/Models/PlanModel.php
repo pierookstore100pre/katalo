@@ -54,4 +54,24 @@ class PlanModel extends Model
             ->where('suscripciones.deleted_at', null)
             ->first();
     }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function listarConSuscripciones(): array
+    {
+        return $this->select(
+            'planes.*, '
+            . '(
+                SELECT COUNT(*)
+                FROM suscripciones s
+                WHERE s.plan_id = planes.id_plan
+                  AND s.estado = \'activa\'
+                  AND s.deleted_at IS NULL
+            ) AS suscripciones_activas'
+        )
+            ->orderBy('planes.precio_mensual', 'ASC')
+            ->orderBy('planes.id_plan', 'ASC')
+            ->findAll();
+    }
 }

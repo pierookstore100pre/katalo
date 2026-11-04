@@ -59,9 +59,38 @@ $routes->group('negocio', ['filter' => 'auth'], static function (RouteCollection
 
     $routes->get('mi-plan', 'Negocio\MiPlan::index');
     $routes->post('mi-plan/upgrade/(:num)', 'Negocio\MiPlan::solicitarUpgrade/$1');
+
+    $routes->get('logs', 'Negocio\Logs::index');
 });
 
 $routes->group('admin', ['filter' => ['auth', 'admin']], static function (RouteCollection $routes): void {
+    $routes->get('dashboard', 'Admin\Dashboard::index');
+
+    $routes->get('ciudades', 'Admin\Ciudades::index');
+    $routes->post('ciudades/(:num)/activar', 'Admin\Ciudades::activar/$1');
+    $routes->post('ciudades/(:num)/desactivar', 'Admin\Ciudades::desactivar/$1');
+
+    $routes->get('distritos', 'Admin\Distritos::index');
+    $routes->get('distritos/crear', 'Admin\Distritos::crear');
+    $routes->post('distritos/crear', 'Admin\Distritos::guardar');
+    $routes->get('distritos/editar/(:num)', 'Admin\Distritos::editar/$1');
+    $routes->post('distritos/editar/(:num)', 'Admin\Distritos::actualizar/$1');
+    $routes->post('distritos/(:num)/activar', 'Admin\Distritos::activar/$1');
+    $routes->post('distritos/(:num)/desactivar', 'Admin\Distritos::desactivar/$1');
+
+    $routes->get('negocios', 'Admin\Negocios::index');
+    $routes->get('negocios/(:num)', 'Admin\Negocios::ver/$1');
+    $routes->post('negocios/(:num)/suspender', 'Admin\Negocios::suspender/$1');
+    $routes->post('negocios/(:num)/reactivar', 'Admin\Negocios::reactivar/$1');
+
+    $routes->get('planes', 'Admin\Planes::index');
+    $routes->get('planes/editar/(:num)', 'Admin\Planes::editar/$1');
+    $routes->post('planes/editar/(:num)', 'Admin\Planes::actualizar/$1');
+    $routes->post('planes/(:num)/activar', 'Admin\Planes::activar/$1');
+    $routes->post('planes/(:num)/desactivar', 'Admin\Planes::desactivar/$1');
+
+    $routes->get('logs', 'Admin\Logs::index');
+
     $routes->get('pagos', 'Admin\Pagos::index');
     $routes->get('pagos/registrar/(:num)', 'Admin\Pagos::registrar/$1');
     $routes->post('pagos/registrar/(:num)', 'Admin\Pagos::guardar/$1');
