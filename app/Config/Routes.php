@@ -98,6 +98,9 @@ $routes->group('admin', ['filter' => ['auth', 'admin']], static function (RouteC
     $routes->post('planes/(:num)/activar', 'Admin\Planes::activar/$1');
     $routes->post('planes/(:num)/desactivar', 'Admin\Planes::desactivar/$1');
 
+    $routes->get('configuracion', 'Admin\Configuracion::index');
+    $routes->post('configuracion', 'Admin\Configuracion::guardar');
+
     $routes->get('logs', 'Admin\Logs::index');
 
     $routes->get('pagos', 'Admin\Pagos::index');

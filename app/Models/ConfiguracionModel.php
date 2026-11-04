@@ -37,4 +37,21 @@ class ConfiguracionModel extends Model
 
         return $fila['valor'];
     }
+
+    public function actualizarPorClave(string $clave, string $valor, ?int $modifiedBy = null): bool
+    {
+        $fila = $this->where('clave', $clave)->first();
+
+        if ($fila === null) {
+            return false;
+        }
+
+        $datos = ['valor' => $valor];
+
+        if ($modifiedBy !== null) {
+            $datos['modified_by'] = $modifiedBy;
+        }
+
+        return $this->update((int) $fila['id_config'], $datos) !== false;
+    }
 }

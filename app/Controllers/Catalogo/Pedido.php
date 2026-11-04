@@ -61,14 +61,10 @@ class Pedido extends BaseController
             ], 404);
         }
 
-        $ip            = $this->request->getIPAddress();
+        $ip           = $this->request->getIPAddress();
         $maxPorIpHora = (int) $this->configuracionModel->obtenerValor('pedidos_max_por_ip_hora', 10);
 
-        if ($maxPorIpHora < 1) {
-            $maxPorIpHora = 10;
-        }
-
-        if ($this->pedidoModel->contarPorIpEnUltimaHora($ip) >= $maxPorIpHora) {
+        if ($maxPorIpHora > 0 && $this->pedidoModel->contarPorIpEnUltimaHora($ip) >= $maxPorIpHora) {
             return $this->respuestaJson([
                 'ok'      => false,
                 'mensaje' => 'Se alcanzó el límite de pedidos por hora desde esta conexión. Intenta más tarde.',

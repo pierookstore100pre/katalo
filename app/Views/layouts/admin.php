@@ -12,6 +12,7 @@ $menu = [
     ['ruta' => 'admin/moderacion', 'label' => 'Moderación', 'icono' => '⚑'],
     ['ruta' => 'admin/planes', 'label' => 'Planes', 'icono' => '◆'],
     ['ruta' => 'admin/pagos', 'label' => 'Pagos', 'icono' => 'S/'],
+    ['ruta' => 'admin/configuracion', 'label' => 'Configuración', 'icono' => '⚙'],
     ['ruta' => 'admin/logs', 'label' => 'Registro de actividad', 'icono' => '≡'],
 ];
 
