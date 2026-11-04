@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\DistritoModel;
 use App\Models\LogActividadModel;
 use App\Models\NegocioModel;
+use App\Services\ModerationService;
 use RuntimeException;
 use Throwable;
 
@@ -14,12 +15,14 @@ class Perfil extends BaseController
     protected NegocioModel $negocioModel;
     protected DistritoModel $distritoModel;
     protected LogActividadModel $logModel;
+    protected ModerationService $moderationService;
 
     public function __construct()
     {
-        $this->negocioModel  = model(NegocioModel::class);
-        $this->distritoModel = model(DistritoModel::class);
-        $this->logModel      = model(LogActividadModel::class);
+        $this->negocioModel      = model(NegocioModel::class);
+        $this->distritoModel     = model(DistritoModel::class);
+        $this->logModel          = model(LogActividadModel::class);
+        $this->moderationService = new ModerationService();
     }
 
     public function index()
@@ -114,26 +117,45 @@ class Perfil extends BaseController
             return redirect()->back()->withInput();
         }
 
+        $evaluacion = $this->moderationService->evaluarCampos($data);
+        $bloqueado  = $evaluacion['bloqueado'];
+
+        $datosPerfil = [
+            'nombre_comercial'   => $data['nombre_comercial'],
+            'slug'               => $data['slug'],
+            'descripcion'        => $data['descripcion'] !== '' ? $data['descripcion'] : null,
+            'direccion'          => $data['direccion'],
+            'distrito_id'        => (int) $data['distrito_id'],
+            'telefono_principal' => $data['telefono_principal'],
+            'horario_texto'      => $data['horario_texto'] !== '' ? $data['horario_texto'] : null,
+            'modified_by'        => $idUsuario,
+        ];
+
+        if ($bloqueado) {
+            $datosPerfil['activo'] = 0;
+        }
+
         $db = db_connect();
         $db->transStart();
 
         try {
-            $actualizado = $this->negocioModel->actualizarPerfil($idNegocio, [
-                'nombre_comercial'   => $data['nombre_comercial'],
-                'slug'               => $data['slug'],
-                'descripcion'        => $data['descripcion'] !== '' ? $data['descripcion'] : null,
-                'direccion'          => $data['direccion'],
-                'distrito_id'        => (int) $data['distrito_id'],
-                'telefono_principal' => $data['telefono_principal'],
-                'horario_texto'      => $data['horario_texto'] !== '' ? $data['horario_texto'] : null,
-                'modified_by'        => $idUsuario,
-            ]);
+            $actualizado = $this->negocioModel->actualizarPerfil($idNegocio, $datosPerfil);
 
             if (! $actualizado) {
                 throw new RuntimeException('No se pudo actualizar el negocio.');
             }
 
             $this->registrarLog('editar_perfil', $idUsuario, $idNegocio, $idNegocio, 'Actualización del perfil del negocio.');
+
+            if ($bloqueado) {
+                $this->moderationService->registrarMarcado(
+                    'negocios',
+                    $idNegocio,
+                    $evaluacion,
+                    $idNegocio,
+                    $idUsuario
+                );
+            }
 
             $db->transComplete();
 
@@ -154,7 +176,9 @@ class Perfil extends BaseController
 
         return redirect()->to(base_url('negocio/perfil'))->with(
             'success',
-            'Perfil del negocio actualizado correctamente.'
+            $bloqueado
+                ? 'Tu perfil ha sido actualizado, pero será revisado antes de publicarse.'
+                : 'Perfil del negocio actualizado correctamente.'
         );
     }
 
@@ -171,7 +195,6 @@ class Perfil extends BaseController
 
         return $this->negocioModel
             ->where('id_negocio', $idNegocio)
-            ->where('activo', 1)
             ->first();
     }
 

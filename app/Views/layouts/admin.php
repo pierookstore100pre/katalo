@@ -9,6 +9,7 @@ $menu = [
     ['ruta' => 'admin/ciudades', 'label' => 'Ciudades', 'icono' => '◉'],
     ['ruta' => 'admin/distritos', 'label' => 'Distritos', 'icono' => '⌖'],
     ['ruta' => 'admin/negocios', 'label' => 'Negocios', 'icono' => '▣'],
+    ['ruta' => 'admin/moderacion', 'label' => 'Moderación', 'icono' => '⚑'],
     ['ruta' => 'admin/planes', 'label' => 'Planes', 'icono' => '◆'],
     ['ruta' => 'admin/pagos', 'label' => 'Pagos', 'icono' => 'S/'],
     ['ruta' => 'admin/logs', 'label' => 'Registro de actividad', 'icono' => '≡'],

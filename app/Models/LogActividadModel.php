@@ -97,6 +97,77 @@ class LogActividadModel extends Model
     }
 
     /**
+     * Obtiene los registros marcados por el filtro de moderación y que siguen
+     * pendientes (productos/categorías ocultos o negocios inactivos).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function obtenerMarcadosPorTabla(string $tabla, int $dias = 30): array
+    {
+        $dias = max(1, $dias);
+
+        switch ($tabla) {
+            case 'productos':
+                $select = 'p.id_producto AS id, p.titulo AS titulo, p.descripcion AS descripcion, '
+                    . 'p.negocio_id AS negocio_id, n.nombre_comercial AS negocio_nombre, '
+                    . 'p.visible AS estado_visible';
+                $join = 'JOIN productos p ON p.id_producto = l.registro_id '
+                    . 'JOIN negocios n ON n.id_negocio = p.negocio_id';
+                $where = 'p.visible = 0 AND p.deleted_at IS NULL';
+                $acciones = "'contenido_marcado', 'contenido_aprobado', 'contenido_rechazado'";
+                break;
+
+            case 'categorias':
+                $select = 'c.id_categoria AS id, c.nombre AS titulo, c.descripcion AS descripcion, '
+                    . 'c.negocio_id AS negocio_id, n.nombre_comercial AS negocio_nombre, '
+                    . 'c.activo AS estado_visible';
+                $join = 'JOIN categorias c ON c.id_categoria = l.registro_id '
+                    . 'JOIN negocios n ON n.id_negocio = c.negocio_id';
+                $where = 'c.activo = 0 AND c.deleted_at IS NULL';
+                $acciones = "'contenido_marcado', 'contenido_aprobado', 'contenido_rechazado'";
+                break;
+
+            case 'negocios':
+                $select = 'n.id_negocio AS id, n.nombre_comercial AS titulo, n.descripcion AS descripcion, '
+                    . 'n.id_negocio AS negocio_id, n.nombre_comercial AS negocio_nombre, '
+                    . 'n.activo AS estado_visible';
+                $join = 'JOIN negocios n ON n.id_negocio = l.registro_id';
+                $where = 'n.activo = 0 AND n.deleted_at IS NULL';
+                $acciones = "'contenido_marcado', 'negocio_aprobado', 'suspender_negocio', 'contenido_rechazado'";
+                break;
+
+            default:
+                return [];
+        }
+
+        $sql = "SELECT {$select}, l.descripcion AS motivo, l.created_at AS log_created_at,
+                    (
+                        SELECT l2.accion
+                        FROM logs_actividad l2
+                        WHERE l2.tabla_afectada = ?
+                          AND l2.registro_id = l.registro_id
+                          AND l2.accion IN ({$acciones})
+                        ORDER BY l2.id_log DESC
+                        LIMIT 1
+                    ) AS estado_moderacion
+                FROM logs_actividad l
+                JOIN (
+                    SELECT registro_id, MAX(id_log) AS max_id
+                    FROM logs_actividad
+                    WHERE tabla_afectada = ?
+                      AND accion = 'contenido_marcado'
+                      AND created_at >= DATE_SUB(NOW(), INTERVAL {$dias} DAY)
+                    GROUP BY registro_id
+                ) lm ON lm.max_id = l.id_log
+                {$join}
+                WHERE {$where}
+                ORDER BY l.created_at DESC, l.id_log DESC
+                LIMIT 50";
+
+        return $this->db->query($sql, [$tabla, $tabla])->getResultArray();
+    }
+
+    /**
      * @param array{desde?: string, hasta?: string, accion?: string, negocio_id?: int|null, usuario_id?: int|null} $filtros
      */
     private function aplicarFiltros($builder, array $filtros): void

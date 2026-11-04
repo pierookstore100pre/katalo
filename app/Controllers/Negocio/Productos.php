@@ -8,6 +8,7 @@ use App\Models\ImagenProductoModel;
 use App\Models\LogActividadModel;
 use App\Models\PlanModel;
 use App\Models\ProductoModel;
+use App\Services\ModerationService;
 use App\Services\PlanLimites;
 use RuntimeException;
 use Throwable;
@@ -20,15 +21,17 @@ class Productos extends BaseController
     protected PlanModel $planModel;
     protected LogActividadModel $logModel;
     protected PlanLimites $planLimites;
+    protected ModerationService $moderationService;
 
     public function __construct()
     {
-        $this->productoModel  = model(ProductoModel::class);
-        $this->categoriaModel = model(CategoriaModel::class);
-        $this->imagenModel    = model(ImagenProductoModel::class);
-        $this->planModel      = model(PlanModel::class);
-        $this->logModel       = model(LogActividadModel::class);
-        $this->planLimites    = new PlanLimites();
+        $this->productoModel     = model(ProductoModel::class);
+        $this->categoriaModel    = model(CategoriaModel::class);
+        $this->imagenModel       = model(ImagenProductoModel::class);
+        $this->planModel         = model(PlanModel::class);
+        $this->logModel          = model(LogActividadModel::class);
+        $this->planLimites       = new PlanLimites();
+        $this->moderationService = new ModerationService();
     }
 
     public function index()
@@ -110,6 +113,9 @@ class Productos extends BaseController
             );
         }
 
+        $evaluacion = $this->moderationService->evaluarCampos($data);
+        $bloqueado  = $evaluacion['bloqueado'];
+
         $db = db_connect();
         $db->transStart();
 
@@ -121,7 +127,7 @@ class Productos extends BaseController
                 'descripcion'        => $data['descripcion'] !== '' ? $data['descripcion'] : null,
                 'precio_referencial' => $this->precio($data['precio_referencial']),
                 'estado'             => $data['estado'],
-                'visible'            => $data['visible'],
+                'visible'            => $bloqueado ? 0 : $data['visible'],
                 'destacado'          => $data['destacado'],
                 'created_by'         => $idUsuario,
                 'modified_by'        => $idUsuario,
@@ -138,6 +144,16 @@ class Productos extends BaseController
                 $idProducto,
                 'Creación del producto ' . $data['titulo'] . '.'
             );
+
+            if ($bloqueado) {
+                $this->moderationService->registrarMarcado(
+                    'productos',
+                    $idProducto,
+                    $evaluacion,
+                    $idNegocio,
+                    $idUsuario
+                );
+            }
 
             $db->transComplete();
 
@@ -156,7 +172,9 @@ class Productos extends BaseController
 
         return redirect()->to(base_url('negocio/productos'))->with(
             'success',
-            'Producto creado correctamente.'
+            $bloqueado
+                ? 'Tu producto ha sido guardado, pero será revisado por un administrador antes de publicarse.'
+                : 'Producto creado correctamente.'
         );
     }
 
@@ -212,6 +230,9 @@ class Productos extends BaseController
             return redirect()->back()->withInput();
         }
 
+        $evaluacion = $this->moderationService->evaluarCampos($data);
+        $bloqueado  = $evaluacion['bloqueado'];
+
         $db = db_connect();
         $db->transStart();
 
@@ -222,7 +243,7 @@ class Productos extends BaseController
                 'descripcion'        => $data['descripcion'] !== '' ? $data['descripcion'] : null,
                 'precio_referencial' => $this->precio($data['precio_referencial']),
                 'estado'             => $data['estado'],
-                'visible'            => $data['visible'],
+                'visible'            => $bloqueado ? 0 : $data['visible'],
                 'destacado'          => $data['destacado'],
                 'modified_by'        => $idUsuario,
             ]);
@@ -238,6 +259,16 @@ class Productos extends BaseController
                 $idProducto,
                 'Actualización del producto ' . $data['titulo'] . '.'
             );
+
+            if ($bloqueado) {
+                $this->moderationService->registrarMarcado(
+                    'productos',
+                    $idProducto,
+                    $evaluacion,
+                    $idNegocio,
+                    $idUsuario
+                );
+            }
 
             $db->transComplete();
 
@@ -256,7 +287,9 @@ class Productos extends BaseController
 
         return redirect()->to(base_url('negocio/productos'))->with(
             'success',
-            'Producto actualizado correctamente.'
+            $bloqueado
+                ? 'Tu producto ha sido guardado, pero será revisado por un administrador antes de publicarse.'
+                : 'Producto actualizado correctamente.'
         );
     }
 

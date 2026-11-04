@@ -83,6 +83,15 @@ $routes->group('admin', ['filter' => ['auth', 'admin']], static function (RouteC
     $routes->post('negocios/(:num)/suspender', 'Admin\Negocios::suspender/$1');
     $routes->post('negocios/(:num)/reactivar', 'Admin\Negocios::reactivar/$1');
 
+    $routes->get('moderacion', 'Admin\Moderacion::index');
+    $routes->post('moderacion/producto/(:num)/aprobar', 'Admin\Moderacion::aprobarProducto/$1');
+    $routes->post('moderacion/producto/(:num)/rechazar', 'Admin\Moderacion::rechazarProducto/$1');
+    $routes->post('moderacion/categoria/(:num)/aprobar', 'Admin\Moderacion::aprobarCategoria/$1');
+    $routes->post('moderacion/categoria/(:num)/rechazar', 'Admin\Moderacion::rechazarCategoria/$1');
+    $routes->post('moderacion/negocio/(:num)/aprobar', 'Admin\Moderacion::aprobarNegocio/$1');
+    $routes->post('moderacion/imagen/(:num)/aprobar', 'Admin\Moderacion::aprobarImagen/$1');
+    $routes->post('moderacion/imagen/(:num)/rechazar', 'Admin\Moderacion::rechazarImagen/$1');
+
     $routes->get('planes', 'Admin\Planes::index');
     $routes->get('planes/editar/(:num)', 'Admin\Planes::editar/$1');
     $routes->post('planes/editar/(:num)', 'Admin\Planes::actualizar/$1');

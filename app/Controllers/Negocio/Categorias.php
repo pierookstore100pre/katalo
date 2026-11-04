@@ -5,6 +5,7 @@ namespace App\Controllers\Negocio;
 use App\Controllers\BaseController;
 use App\Models\CategoriaModel;
 use App\Models\LogActividadModel;
+use App\Services\ModerationService;
 use RuntimeException;
 use Throwable;
 
@@ -12,11 +13,13 @@ class Categorias extends BaseController
 {
     protected CategoriaModel $categoriaModel;
     protected LogActividadModel $logModel;
+    protected ModerationService $moderationService;
 
     public function __construct()
     {
-        $this->categoriaModel = model(CategoriaModel::class);
-        $this->logModel       = model(LogActividadModel::class);
+        $this->categoriaModel    = model(CategoriaModel::class);
+        $this->logModel          = model(LogActividadModel::class);
+        $this->moderationService = new ModerationService();
     }
 
     public function index()
@@ -66,6 +69,9 @@ class Categorias extends BaseController
             return redirect()->back()->withInput();
         }
 
+        $evaluacion = $this->moderationService->evaluarCampos($data);
+        $bloqueado  = $evaluacion['bloqueado'];
+
         $db = db_connect();
         $db->transStart();
 
@@ -76,7 +82,7 @@ class Categorias extends BaseController
                 'slug'               => $data['slug'],
                 'descripcion'        => $data['descripcion'] !== '' ? $data['descripcion'] : null,
                 'categoria_padre_id' => $this->idPadre($data['categoria_padre_id']),
-                'activo'             => $data['activo'],
+                'activo'             => $bloqueado ? 0 : $data['activo'],
                 'created_by'         => $idUsuario,
                 'modified_by'        => $idUsuario,
             ], true);
@@ -92,6 +98,16 @@ class Categorias extends BaseController
                 $idCategoria,
                 'Creación de la categoría ' . $data['nombre'] . '.'
             );
+
+            if ($bloqueado) {
+                $this->moderationService->registrarMarcado(
+                    'categorias',
+                    $idCategoria,
+                    $evaluacion,
+                    $idNegocio,
+                    $idUsuario
+                );
+            }
 
             $db->transComplete();
 
@@ -110,7 +126,9 @@ class Categorias extends BaseController
 
         return redirect()->to(base_url('negocio/categorias'))->with(
             'success',
-            'Categoría creada correctamente.'
+            $bloqueado
+                ? 'Tu categoría ha sido guardada, pero será revisada por un administrador antes de publicarse.'
+                : 'Categoría creada correctamente.'
         );
     }
 
@@ -172,6 +190,9 @@ class Categorias extends BaseController
             return redirect()->back()->withInput();
         }
 
+        $evaluacion = $this->moderationService->evaluarCampos($data);
+        $bloqueado  = $evaluacion['bloqueado'];
+
         $db = db_connect();
         $db->transStart();
 
@@ -181,7 +202,7 @@ class Categorias extends BaseController
                 'slug'               => $data['slug'],
                 'descripcion'        => $data['descripcion'] !== '' ? $data['descripcion'] : null,
                 'categoria_padre_id' => $this->idPadre($data['categoria_padre_id']),
-                'activo'             => $data['activo'],
+                'activo'             => $bloqueado ? 0 : $data['activo'],
                 'modified_by'        => $idUsuario,
             ]);
 
@@ -196,6 +217,16 @@ class Categorias extends BaseController
                 $idCategoria,
                 'Actualización de la categoría ' . $data['nombre'] . '.'
             );
+
+            if ($bloqueado) {
+                $this->moderationService->registrarMarcado(
+                    'categorias',
+                    $idCategoria,
+                    $evaluacion,
+                    $idNegocio,
+                    $idUsuario
+                );
+            }
 
             $db->transComplete();
 
@@ -214,7 +245,9 @@ class Categorias extends BaseController
 
         return redirect()->to(base_url('negocio/categorias'))->with(
             'success',
-            'Categoría actualizada correctamente.'
+            $bloqueado
+                ? 'Tu categoría ha sido guardada, pero será revisada por un administrador antes de publicarse.'
+                : 'Categoría actualizada correctamente.'
         );
     }
 

@@ -74,6 +74,38 @@ class ImagenProductoModel extends Model
     }
 
     /**
+     * @return list<array<string, mixed>>
+     */
+    public function listarRecientes(int $dias = 7): array
+    {
+        $dias = max(1, $dias);
+
+        $sql = "SELECT i.id_imagen, i.producto_id, i.ruta_imagen, i.nombre_archivo, i.created_at,
+                       p.titulo AS producto_titulo, p.negocio_id,
+                       n.nombre_comercial AS negocio_nombre,
+                       (
+                           SELECT l.accion
+                           FROM logs_actividad l
+                           WHERE l.tabla_afectada = 'imagenes_producto'
+                             AND l.registro_id = i.id_imagen
+                             AND l.accion IN ('imagen_aprobada', 'imagen_rechazada')
+                           ORDER BY l.id_log DESC
+                           LIMIT 1
+                       ) AS estado_moderacion
+                FROM imagenes_producto i
+                JOIN productos p ON p.id_producto = i.producto_id
+                JOIN negocios n ON n.id_negocio = p.negocio_id
+                WHERE i.deleted_at IS NULL
+                  AND p.deleted_at IS NULL
+                  AND n.deleted_at IS NULL
+                  AND i.created_at >= DATE_SUB(NOW(), INTERVAL {$dias} DAY)
+                ORDER BY i.created_at DESC, i.id_imagen DESC
+                LIMIT 50";
+
+        return $this->db->query($sql)->getResultArray();
+    }
+
+    /**
      * @param list<int> $idsProductos
      *
      * @return array<int, array<string, mixed>>
