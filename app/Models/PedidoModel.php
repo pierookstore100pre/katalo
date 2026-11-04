@@ -71,4 +71,24 @@ class PedidoModel extends Model
             ->where('created_at <', $fin . ' 00:00:00')
             ->countAllResults();
     }
+
+    /**
+     * Cuenta los pedidos no eliminados creados desde una IP en la última hora.
+     *
+     * Se incluyen los pedidos cancelados a propósito: el abuso de creación de
+     * pedidos no distingue el estado del pedido.
+     */
+    public function contarPorIpEnUltimaHora(string $ip): int
+    {
+        $fila = $this->db->query(
+            'SELECT COUNT(*) AS total
+             FROM pedidos
+             WHERE ip_cliente = ?
+               AND created_at >= (NOW() - INTERVAL 1 HOUR)
+               AND deleted_at IS NULL',
+            [$ip]
+        )->getRowArray();
+
+        return (int) ($fila['total'] ?? 0);
+    }
 }

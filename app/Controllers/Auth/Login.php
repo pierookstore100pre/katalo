@@ -3,6 +3,7 @@
 namespace App\Controllers\Auth;
 
 use App\Controllers\BaseController;
+use App\Models\ConfiguracionModel;
 use App\Models\LogActividadModel;
 use App\Models\NegocioModel;
 use App\Models\NegocioUsuarioModel;
@@ -15,6 +16,7 @@ class Login extends BaseController
     protected NegocioModel $negocioModel;
     protected NegocioUsuarioModel $negocioUsuarioModel;
     protected LogActividadModel $logModel;
+    protected ConfiguracionModel $configuracionModel;
 
     public function __construct()
     {
@@ -22,6 +24,7 @@ class Login extends BaseController
         $this->negocioModel        = model(NegocioModel::class);
         $this->negocioUsuarioModel = model(NegocioUsuarioModel::class);
         $this->logModel            = model(LogActividadModel::class);
+        $this->configuracionModel  = model(ConfiguracionModel::class);
     }
 
     public function index()
@@ -60,17 +63,58 @@ class Login extends BaseController
             return redirect()->back()->withInput();
         }
 
+        $intentosMax    = max(1, (int) $this->configuracionModel->obtenerValor('login_intentos_max', 5));
+        $bloqueoMinutos = max(1, (int) $this->configuracionModel->obtenerValor('login_bloqueo_minutos', 15));
+
         $usuario = $this->usuarioModel
             ->where('email', $data['email'])
             ->where('activo', 1)
             ->first();
 
-        if ($usuario === null || ! password_verify($data['password'], $usuario['password_hash'])) {
+        if ($usuario === null) {
+            $this->registrarLoginFallido(null);
+
             return redirect()->back()->withInput()->with(
                 'error',
-                'Correo o contraseña incorrectos.'
+                'Credenciales incorrectas.'
             );
         }
+
+        $bloqueadoHasta = $usuario['bloqueado_hasta'] !== null
+            ? strtotime((string) $usuario['bloqueado_hasta'])
+            : null;
+
+        if ($bloqueadoHasta !== null && $bloqueadoHasta > time()) {
+            $minutosRestantes = max(1, (int) ceil(($bloqueadoHasta - time()) / 60));
+
+            return redirect()->back()->withInput()->with(
+                'error',
+                'Cuenta bloqueada temporalmente. Intenta de nuevo en ' . $minutosRestantes . ' minutos.'
+            );
+        }
+
+        if (! password_verify($data['password'], $usuario['password_hash'])) {
+            $incrementos = ((int) $usuario['intentos_fallidos']) + 1;
+            $actualizar  = ['intentos_fallidos' => $incrementos];
+
+            if ($incrementos >= $intentosMax) {
+                $actualizar['bloqueado_hasta'] = date('Y-m-d H:i:s', time() + ($bloqueoMinutos * 60));
+            }
+
+            $this->usuarioModel->update((int) $usuario['id_usuario'], $actualizar);
+            $this->registrarLoginFallido((int) $usuario['id_usuario']);
+
+            return redirect()->back()->withInput()->with(
+                'error',
+                'Credenciales incorrectas.'
+            );
+        }
+
+        $this->usuarioModel->update((int) $usuario['id_usuario'], [
+            'intentos_fallidos' => 0,
+            'bloqueado_hasta'   => null,
+            'ultimo_login'      => date('Y-m-d H:i:s'),
+        ]);
 
         $rolPlataforma = $this->obtenerRolPlataforma((int) $usuario['id_usuario']);
 
@@ -90,11 +134,6 @@ class Login extends BaseController
 
         if ($membresia === null) {
             if ($rolPlataforma === 'administrador') {
-                $this->usuarioModel->update((int) $usuario['id_usuario'], [
-                    'intentos_fallidos' => 0,
-                    'ultimo_login'      => date('Y-m-d H:i:s'),
-                ]);
-
                 $this->registrarIngreso((int) $usuario['id_usuario'], null);
 
                 $session = session();
@@ -128,11 +167,6 @@ class Login extends BaseController
                 'Tu negocio no se encuentra activo. Contacta al administrador.'
             );
         }
-
-        $this->usuarioModel->update((int) $usuario['id_usuario'], [
-            'intentos_fallidos' => 0,
-            'ultimo_login'      => date('Y-m-d H:i:s'),
-        ]);
 
         $this->registrarIngreso((int) $usuario['id_usuario'], (int) $negocio['id_negocio']);
 
@@ -174,6 +208,24 @@ class Login extends BaseController
         }
 
         return $rolPlataforma;
+    }
+
+    private function registrarLoginFallido(?int $idUsuario): void
+    {
+        try {
+            $this->logModel->insert([
+                'usuario_id'     => $idUsuario,
+                'negocio_id'     => null,
+                'accion'         => 'login_fallido',
+                'tabla_afectada' => 'usuarios',
+                'registro_id'    => $idUsuario,
+                'descripcion'    => 'Intento de inicio de sesión fallido.',
+                'ip_address'     => $this->request->getIPAddress(),
+                'user_agent'     => mb_substr($this->request->getUserAgent()->getAgentString(), 0, 255),
+            ]);
+        } catch (Throwable $e) {
+            log_message('error', 'No se pudo registrar el log de login fallido: {message}', ['message' => $e->getMessage()]);
+        }
     }
 
     private function registrarIngreso(int $idUsuario, ?int $idNegocio): void

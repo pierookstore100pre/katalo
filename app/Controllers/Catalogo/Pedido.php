@@ -3,6 +3,7 @@
 namespace App\Controllers\Catalogo;
 
 use App\Controllers\BaseController;
+use App\Models\ConfiguracionModel;
 use App\Models\DetallePedidoModel;
 use App\Models\LogActividadModel;
 use App\Models\NegocioModel;
@@ -32,6 +33,7 @@ class Pedido extends BaseController
     protected PedidoModel $pedidoModel;
     protected DetallePedidoModel $detalleModel;
     protected LogActividadModel $logModel;
+    protected ConfiguracionModel $configuracionModel;
     protected PlanLimites $planLimites;
 
     public function __construct()
@@ -42,6 +44,7 @@ class Pedido extends BaseController
         $this->pedidoModel         = model(PedidoModel::class);
         $this->detalleModel        = model(DetallePedidoModel::class);
         $this->logModel            = model(LogActividadModel::class);
+        $this->configuracionModel  = model(ConfiguracionModel::class);
         $this->planLimites         = new PlanLimites();
     }
 
@@ -56,6 +59,20 @@ class Pedido extends BaseController
                 'ok'      => false,
                 'mensaje' => 'Este catálogo no está disponible en esta ciudad o el negocio ya no opera en Katalo.pe.',
             ], 404);
+        }
+
+        $ip            = $this->request->getIPAddress();
+        $maxPorIpHora = (int) $this->configuracionModel->obtenerValor('pedidos_max_por_ip_hora', 10);
+
+        if ($maxPorIpHora < 1) {
+            $maxPorIpHora = 10;
+        }
+
+        if ($this->pedidoModel->contarPorIpEnUltimaHora($ip) >= $maxPorIpHora) {
+            return $this->respuestaJson([
+                'ok'      => false,
+                'mensaje' => 'Se alcanzó el límite de pedidos por hora desde esta conexión. Intenta más tarde.',
+            ], 429);
         }
 
         $datos = $this->datosFormulario();
