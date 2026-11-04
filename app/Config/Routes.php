@@ -7,10 +7,9 @@ $routes->get('/', 'Home::index');
 
 $routes->get('api/ping', 'Api\Ping::index');
 
+// Endpoint global de imágenes: se mantiene /c/imagen/{id_imagen} porque el
+// id de imagen es único y así se evita duplicar la lógica por ciudad.
 $routes->get('c/imagen/(:num)', 'Catalogo\Imagen::ver/$1');
-$routes->post('c/(:segment)/pedido', 'Catalogo\Pedido::crear/$1');
-$routes->get('c/(:segment)/productos', 'Catalogo\Catalogo::productos/$1');
-$routes->get('c/(:segment)', 'Catalogo\Catalogo::index/$1');
 
 $routes->get('auth/registro', 'Auth\Registro::index');
 $routes->post('auth/registro', 'Auth\Registro::guardar');
@@ -69,3 +68,12 @@ $routes->group('admin', ['filter' => ['auth', 'admin']], static function (RouteC
     $routes->post('pagos/(:num)/confirmar', 'Admin\Pagos::confirmar/$1');
     $routes->post('pagos/(:num)/rechazar', 'Admin\Pagos::rechazar/$1');
 });
+
+// Catálogo público. Se registra al final para no colisionar con /auth,
+// /negocio, /admin, /dashboard ni /c/imagen. Los slugs reservados se
+// rechazan también en los controladores.
+$routes->get('c/(:segment)', 'Catalogo\Redireccion::index/$1');
+$routes->get('(:segment)/(:segment)/productos', 'Catalogo\Catalogo::productos/$1/$2');
+$routes->post('(:segment)/(:segment)/pedido', 'Catalogo\Pedido::crear/$1/$2');
+$routes->get('(:segment)/(:segment)', 'Catalogo\Catalogo::index/$1/$2');
+$routes->get('(:segment)', 'Catalogo\Catalogo::ciudad/$1');

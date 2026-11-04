@@ -31,9 +31,10 @@ class Perfil extends BaseController
         }
 
         return view('negocio/perfil', [
-            'titulo'    => 'Mi perfil',
-            'negocio'   => $negocio,
-            'distritos' => $this->distritoModel->getActivosConCiudadActiva(),
+            'titulo'      => 'Mi perfil',
+            'negocio'     => $negocio,
+            'distritos'   => $this->distritoModel->getActivosConCiudadActiva(),
+            'ciudad_slug' => $this->negocioModel->obtenerCiudadSlug((int) $negocio['id_negocio']),
         ]);
     }
 

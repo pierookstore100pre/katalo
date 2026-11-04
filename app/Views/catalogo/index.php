@@ -616,6 +616,7 @@
 <?= $this->section('content') ?>
 <?php
 $slugNegocio = (string) $negocio['slug'];
+$slugCiudad  = (string) ($ciudad_slug ?? '');
 $telefono    = preg_replace('/\D+/', '', (string) ($negocio['telefono_principal'] ?? ''));
 $whatsapp    = '';
 
@@ -623,7 +624,9 @@ if ($telefono !== '') {
     $whatsapp = strlen($telefono) === 9 ? '51' . $telefono : $telefono;
 }
 
-$urlFiltro = static function (string $categoria) use ($slugNegocio, $busqueda): string {
+$urlPublica = base_url($slugCiudad . '/' . $slugNegocio);
+
+$urlFiltro = static function (string $categoria) use ($urlPublica, $busqueda): string {
     $params = [];
 
     if ($categoria !== '') {
@@ -634,9 +637,7 @@ $urlFiltro = static function (string $categoria) use ($slugNegocio, $busqueda): 
         $params['q'] = $busqueda;
     }
 
-    $url = base_url('c/' . $slugNegocio);
-
-    return $params === [] ? $url : $url . '?' . http_build_query($params);
+    return $params === [] ? $urlPublica : $urlPublica . '?' . http_build_query($params);
 };
 
 $hayFiltro = $categoriaActiva !== '' || $busqueda !== '';
@@ -698,7 +699,7 @@ $inicial   = mb_strtoupper(mb_substr((string) $negocio['nombre_comercial'], 0, 1
     </header>
 
     <section class="catalog-tools" aria-label="Buscador y categorías">
-        <form class="search-form" method="get" action="<?= esc(base_url('c/' . $slugNegocio), 'attr') ?>" role="search">
+        <form class="search-form" method="get" action="<?= esc($urlPublica, 'attr') ?>" role="search">
             <?php if ($categoriaActiva !== ''): ?>
                 <input type="hidden" name="categoria" value="<?= esc($categoriaActiva, 'attr') ?>">
             <?php endif; ?>
@@ -839,7 +840,7 @@ $inicial   = mb_strtoupper(mb_substr((string) $negocio['nombre_comercial'], 0, 1
     'use strict';
 
     const SLUG        = <?= json_encode($slugNegocio) ?>;
-    const PEDIDO_URL  = <?= json_encode(base_url('c/' . $slugNegocio . '/pedido')) ?>;
+    const PEDIDO_URL  = <?= json_encode(base_url($slugCiudad . '/' . $slugNegocio . '/pedido')) ?>;
     const CSRF_HEADER = <?= json_encode(csrf_header()) ?>;
     const STORAGE_KEY = 'katalo_carrito_' + SLUG;
 

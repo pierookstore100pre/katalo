@@ -15,8 +15,9 @@ class Dashboard extends BaseController
             ->setHeader('Pragma', 'no-cache')
             ->setHeader('Expires', '0');
 
-        $idNegocio = (int) session()->get('id_negocio');
-        $negocio   = model(NegocioModel::class)
+        $idNegocio    = (int) session()->get('id_negocio');
+        $negocioModel = model(NegocioModel::class);
+        $negocio      = $negocioModel
             ->where('id_negocio', $idNegocio)
             ->where('activo', 1)
             ->first();
@@ -44,6 +45,7 @@ class Dashboard extends BaseController
             'negocio'     => $negocio,
             'suscripcion' => $suscripcion,
             'plan'        => $plan,
+            'ciudad_slug' => $negocioModel->obtenerCiudadSlug($idNegocio),
         ]);
     }
 }

@@ -217,6 +217,7 @@ $flashSuccess    = session()->getFlashdata('success');
             </div>
 
             <div class="quick-links">
+                <a class="logout" href="<?= esc(base_url(($ciudad_slug ?? '') . '/' . $negocio['slug']), 'attr') ?>" target="_blank" rel="noopener noreferrer">Ver mi catálogo</a>
                 <a class="logout" href="<?= base_url('negocio/perfil') ?>">Mi perfil</a>
                 <a class="logout" href="<?= base_url('negocio/categorias') ?>">Mis categorías</a>
                 <a class="logout" href="<?= base_url('negocio/productos') ?>">Mis productos</a>

@@ -48,6 +48,21 @@ class NegocioModel extends Model
         return $builder->countAllResults() === 0;
     }
 
+    public function obtenerCiudadSlug(int $idNegocio): ?string
+    {
+        $fila = $this->db->query(
+            'SELECT ciudades.slug
+             FROM negocios
+             JOIN distritos ON distritos.id_distrito = negocios.distrito_id
+             JOIN ciudades ON ciudades.id_ciudad = distritos.ciudad_id
+             WHERE negocios.id_negocio = ? AND negocios.deleted_at IS NULL
+             LIMIT 1',
+            [$idNegocio]
+        )->getRowArray();
+
+        return $fila === null ? null : (string) $fila['slug'];
+    }
+
     public function obtenerSiguienteNumeroConBloqueo(int $idNegocio): ?int
     {
         $fila = $this->db->query(

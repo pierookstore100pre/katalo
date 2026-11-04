@@ -51,6 +51,13 @@ $distritoActual = (string) old('distrito_id', $negocio['distrito_id']);
                     class="<?= isset($errors['slug']) ? 'input-error' : '' ?>"
                 >
                 <span class="hint">Minúsculas, números y guiones. Debe ser único.</span>
+                <?php
+                $urlPublica = base_url(($ciudad_slug ?? '') . '/' . $negocio['slug']);
+                ?>
+                <span class="hint">
+                    URL pública:
+                    <a href="<?= esc($urlPublica, 'attr') ?>" target="_blank" rel="noopener noreferrer"><?= esc($urlPublica) ?></a>
+                </span>
                 <?php if (isset($errors['slug'])): ?>
                     <p class="field-error"><?= esc($errors['slug']) ?></p>
                 <?php endif; ?>

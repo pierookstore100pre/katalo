@@ -54,7 +54,7 @@
     <section class="state-card">
         <div class="state-mark" aria-hidden="true">K</div>
         <h1>Catálogo no disponible</h1>
-        <p>Este catálogo no está disponible o el negocio ya no opera en Katalo.pe</p>
+        <p>Este catálogo no está disponible en esta ciudad o el negocio ya no opera en Katalo.pe</p>
         <a class="btn" href="<?= esc(base_url('/'), 'attr') ?>">Ir a Katalo.pe</a>
     </section>
 </main>

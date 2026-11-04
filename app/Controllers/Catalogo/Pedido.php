@@ -15,6 +15,17 @@ use Throwable;
 
 class Pedido extends BaseController
 {
+    private const SLUGS_RESERVADOS = [
+        'auth',
+        'negocio',
+        'admin',
+        'dashboard',
+        'c',
+        'api',
+        'assets',
+        'favicon.ico',
+    ];
+
     protected NegocioPublicoModel $negocioPublicoModel;
     protected NegocioModel $negocioModel;
     protected ProductoModel $productoModel;
@@ -34,14 +45,16 @@ class Pedido extends BaseController
         $this->planLimites         = new PlanLimites();
     }
 
-    public function crear($slug = null)
+    public function crear($ciudad_slug = null, $slug = null)
     {
-        $negocio = $this->negocioPublicoModel->findPorSlug((string) $slug);
+        $ciudadSlug  = trim((string) $ciudad_slug);
+        $slugNegocio = trim((string) $slug);
+        $negocio     = $this->buscarNegocioPublico($ciudadSlug, $slugNegocio);
 
         if ($negocio === null) {
             return $this->respuestaJson([
                 'ok'      => false,
-                'mensaje' => 'Este catálogo no está disponible o el negocio ya no opera en Katalo.pe.',
+                'mensaje' => 'Este catálogo no está disponible en esta ciudad o el negocio ya no opera en Katalo.pe.',
             ], 404);
         }
 
@@ -194,6 +207,26 @@ class Pedido extends BaseController
             'telefono_negocio'  => preg_replace('/\D+/', '', (string) ($negocio['telefono_principal'] ?? '')),
             'id_pedido'         => $idPedido,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function buscarNegocioPublico(string $ciudadSlug, string $slug): ?array
+    {
+        if ($ciudadSlug === '' || $slug === ''
+            || $this->esSlugReservado($ciudadSlug)
+            || $this->esSlugReservado($slug)
+        ) {
+            return null;
+        }
+
+        return $this->negocioPublicoModel->findPorCiudadYSlug($ciudadSlug, $slug);
+    }
+
+    private function esSlugReservado(string $valor): bool
+    {
+        return in_array(strtolower($valor), self::SLUGS_RESERVADOS, true);
     }
 
     /**

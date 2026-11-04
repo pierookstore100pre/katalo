@@ -10,6 +10,17 @@ use App\Models\ProductoPublicoModel;
 
 class Catalogo extends BaseController
 {
+    private const SLUGS_RESERVADOS = [
+        'auth',
+        'negocio',
+        'admin',
+        'dashboard',
+        'c',
+        'api',
+        'assets',
+        'favicon.ico',
+    ];
+
     protected NegocioPublicoModel $negocioModel;
     protected ProductoPublicoModel $productoModel;
     protected CategoriaModel $categoriaModel;
@@ -25,16 +36,19 @@ class Catalogo extends BaseController
 
     /**
      * Estrategia elegida: el filtro por categoría y la búsqueda se resuelven
-     * en el mismo GET /c/{slug} mediante query params (render del lado del
-     * servidor, sin AJAX). El endpoint JSON /c/{slug}/productos queda
-     * disponible con la misma lógica para consumos futuros.
+     * en el mismo GET /{ciudad_slug}/{slug} mediante query params (render del
+     * lado del servidor, sin AJAX). El endpoint JSON
+     * /{ciudad_slug}/{slug}/productos queda disponible con la misma lógica
+     * para consumos futuros.
      *
      * La búsqueda usa LIKE sobre título y descripción para el MVP. Si el
      * catálogo crece, se migrará a un índice FULLTEXT.
      */
-    public function index($slug = null)
+    public function index($ciudad_slug = null, $slug = null)
     {
-        $negocio = $this->negocioModel->findPorSlug((string) $slug);
+        $ciudadSlug  = trim((string) $ciudad_slug);
+        $slugNegocio = trim((string) $slug);
+        $negocio     = $this->buscarNegocioPublico($ciudadSlug, $slugNegocio);
 
         if ($negocio === null) {
             return $this->catalogoNoDisponible();
@@ -60,16 +74,20 @@ class Catalogo extends BaseController
             'categoriaActiva' => $categoriaActiva,
             'busqueda'        => $busqueda,
             'productos'       => $productos,
+            'ciudad_slug'     => $ciudadSlug,
+            'slug'            => $slugNegocio,
         ]);
     }
 
-    public function productos($slug = null)
+    public function productos($ciudad_slug = null, $slug = null)
     {
-        $negocio = $this->negocioModel->findPorSlug((string) $slug);
+        $ciudadSlug  = trim((string) $ciudad_slug);
+        $slugNegocio = trim((string) $slug);
+        $negocio     = $this->buscarNegocioPublico($ciudadSlug, $slugNegocio);
 
         if ($negocio === null) {
             return $this->response->setStatusCode(404)->setJSON([
-                'error' => 'Este catálogo no está disponible o el negocio ya no opera en Katalo.pe',
+                'error' => 'Este catálogo no está disponible en esta ciudad o el negocio ya no opera en Katalo.pe',
             ]);
         }
 
@@ -104,9 +122,52 @@ class Catalogo extends BaseController
             'negocio' => [
                 'nombre_comercial' => $negocio['nombre_comercial'],
                 'slug'             => $negocio['slug'],
+                'ciudad_slug'      => $ciudadSlug,
             ],
             'productos' => $salida,
         ]);
+    }
+
+    public function ciudad($ciudad_slug = null)
+    {
+        $ciudadSlug = trim((string) $ciudad_slug);
+
+        if ($ciudadSlug === '' || $this->esSlugReservado($ciudadSlug)) {
+            return $this->catalogoNoDisponible();
+        }
+
+        $negocios = $this->negocioModel->listarPorCiudadSlug($ciudadSlug);
+
+        if ($negocios === []) {
+            return $this->catalogoNoDisponible();
+        }
+
+        return view('catalogo/ciudad', [
+            'titulo'        => 'Catálogos en ' . $negocios[0]['ciudad_nombre'],
+            'ciudad_slug'   => $ciudadSlug,
+            'ciudad_nombre' => $negocios[0]['ciudad_nombre'],
+            'negocios'      => $negocios,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function buscarNegocioPublico(string $ciudadSlug, string $slug): ?array
+    {
+        if ($ciudadSlug === '' || $slug === ''
+            || $this->esSlugReservado($ciudadSlug)
+            || $this->esSlugReservado($slug)
+        ) {
+            return null;
+        }
+
+        return $this->negocioModel->findPorCiudadYSlug($ciudadSlug, $slug);
+    }
+
+    private function esSlugReservado(string $valor): bool
+    {
+        return in_array(strtolower($valor), self::SLUGS_RESERVADOS, true);
     }
 
     /**
