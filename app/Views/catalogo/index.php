@@ -35,6 +35,14 @@
         font-size: 1.6rem;
         font-weight: 800;
         box-shadow: 0 10px 24px rgba(15, 118, 110, 0.24);
+        overflow: hidden;
+    }
+
+    .business-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        background: #fff;
     }
 
     .business-main { min-width: 0; padding-top: 34px; }
@@ -611,6 +619,16 @@
         .product-grid { grid-template-columns: repeat(3, 1fr); }
     }
 </style>
+<?php $googleAnalyticsId = trim((string) ($negocio['google_analytics_id'] ?? '')); ?>
+<?php if ($googleAnalyticsId !== ''): ?>
+<script async src="https://www.googletagmanager.com/gtag/js?id=<?= esc(rawurlencode($googleAnalyticsId), 'attr') ?>"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', <?= json_encode($googleAnalyticsId) ?>);
+</script>
+<?php endif; ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -642,12 +660,22 @@ $urlFiltro = static function (string $categoria) use ($urlPublica, $busqueda): s
 
 $hayFiltro = $categoriaActiva !== '' || $busqueda !== '';
 $inicial   = mb_strtoupper(mb_substr((string) $negocio['nombre_comercial'], 0, 1));
+$tieneLogo = ! empty($negocio['logo_ruta']);
 ?>
 <main class="catalog-shell">
     <header class="business-card">
         <div class="business-cover"></div>
         <div class="business-body">
-            <div class="business-avatar" aria-hidden="true"><?= esc($inicial) ?></div>
+            <div class="business-avatar" aria-hidden="true">
+                <?php if ($tieneLogo): ?>
+                    <img
+                        src="<?= esc(base_url('c/logo/' . (int) $negocio['id_negocio']), 'attr') ?>"
+                        alt=""
+                    >
+                <?php else: ?>
+                    <?= esc($inicial) ?>
+                <?php endif; ?>
+            </div>
             <div class="business-main">
                 <p class="business-eyebrow">Catálogo digital</p>
                 <h1 class="business-name"><?= esc($negocio['nombre_comercial']) ?></h1>

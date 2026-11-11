@@ -16,10 +16,12 @@ class NegocioModel extends Model
         'nombre_comercial',
         'slug',
         'descripcion',
+        'logo_ruta',
         'direccion',
         'distrito_id',
         'telefono_principal',
         'horario_texto',
+        'google_analytics_id',
         'siguiente_numero_pedido',
         'activo',
         'created_by',
@@ -173,6 +175,35 @@ class NegocioModel extends Model
             . 'LIMIT 1',
             [$idNegocio]
         )->getRowArray();
+    }
+
+    public function obtenerLogoAbsoluto(int $idNegocio): ?string
+    {
+        $negocio = $this->select('logo_ruta')
+            ->where('id_negocio', $idNegocio)
+            ->first();
+
+        if ($negocio === null || empty($negocio['logo_ruta'])) {
+            return null;
+        }
+
+        $partes = explode(
+            DIRECTORY_SEPARATOR,
+            str_replace(['/', '\\'], DIRECTORY_SEPARATOR, trim((string) $negocio['logo_ruta']))
+        );
+
+        if (count($partes) !== 4
+            || $partes[0] !== 'uploads'
+            || $partes[1] !== 'logos'
+            || ! ctype_digit($partes[2])
+            || basename($partes[3]) !== $partes[3]
+        ) {
+            return null;
+        }
+
+        $absoluta = rtrim(WRITEPATH, '/\\') . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $partes);
+
+        return is_file($absoluta) ? $absoluta : null;
     }
 
     /**

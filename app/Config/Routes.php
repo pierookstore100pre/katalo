@@ -10,6 +10,7 @@ $routes->get('api/ping', 'Api\Ping::index');
 // Endpoint global de imágenes: se mantiene /c/imagen/{id_imagen} porque el
 // id de imagen es único y así se evita duplicar la lógica por ciudad.
 $routes->get('c/imagen/(:num)', 'Catalogo\Imagen::ver/$1');
+$routes->get('c/logo/(:num)', 'Catalogo\Logo::ver/$1');
 
 $routes->get('auth/registro', 'Auth\Registro::index');
 $routes->post('auth/registro', 'Auth\Registro::guardar');
@@ -59,6 +60,14 @@ $routes->group('negocio', ['filter' => 'auth'], static function (RouteCollection
 
     $routes->get('mi-plan', 'Negocio\MiPlan::index');
     $routes->post('mi-plan/upgrade/(:num)', 'Negocio\MiPlan::solicitarUpgrade/$1');
+
+    $routes->get('reportes', 'Negocio\Reportes::index');
+    $routes->get('reportes/pdf', 'Negocio\Reportes::pdf');
+
+    $routes->get('colaboradores', 'Negocio\Colaboradores::index');
+    $routes->get('colaboradores/crear', 'Negocio\Colaboradores::crear');
+    $routes->post('colaboradores/crear', 'Negocio\Colaboradores::guardar');
+    $routes->post('colaboradores/(:num)/desactivar', 'Negocio\Colaboradores::desactivar/$1');
 
     $routes->get('logs', 'Negocio\Logs::index');
 });

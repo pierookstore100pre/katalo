@@ -32,7 +32,7 @@ class NegocioPublicoModel extends Model
      */
     public function findPorCiudadYSlug(string $ciudadSlug, string $slug): ?array
     {
-        return $this->select('v_negocios_publicos.*')
+        return $this->select('v_negocios_publicos.*, negocios.logo_ruta')
             ->join('negocios', 'negocios.id_negocio = v_negocios_publicos.id_negocio')
             ->join('distritos', 'distritos.id_distrito = negocios.distrito_id')
             ->join('ciudades', 'ciudades.id_ciudad = distritos.ciudad_id')

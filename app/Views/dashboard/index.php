@@ -4,6 +4,9 @@ $email           = session()->get('email') ?? '';
 $rolNegocio      = session()->get('rol_negocio') ?? 'propietario';
 $flashError      = session()->getFlashdata('error');
 $flashSuccess    = session()->getFlashdata('success');
+$tieneReportes   = ! empty($tiene_reportes);
+$esPlanPro       = ! empty($es_plan_pro);
+$esPropietario   = $rolNegocio === 'propietario';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -223,6 +226,12 @@ $flashSuccess    = session()->getFlashdata('success');
                 <a class="logout" href="<?= base_url('negocio/productos') ?>">Mis productos</a>
                 <a class="logout" href="<?= base_url('negocio/pedidos') ?>">Mis Pedidos</a>
                 <a class="logout" href="<?= base_url('negocio/mi-plan') ?>">Mi Plan</a>
+                <?php if ($tieneReportes): ?>
+                    <a class="logout" href="<?= base_url('negocio/reportes') ?>">Reportes</a>
+                <?php endif; ?>
+                <?php if ($esPlanPro && $esPropietario): ?>
+                    <a class="logout" href="<?= base_url('negocio/colaboradores') ?>">Colaboradores</a>
+                <?php endif; ?>
                 <a class="logout" href="<?= base_url('negocio/logs') ?>">Registro de actividad</a>
             </div>
         </section>

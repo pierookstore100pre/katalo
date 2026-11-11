@@ -9,10 +9,30 @@ $esCategorias = str_starts_with($ruta, 'negocio/categorias');
 $esProductos  = str_starts_with($ruta, 'negocio/productos');
 $esPedidos    = str_starts_with($ruta, 'negocio/pedidos');
 $esMiPlan     = str_starts_with($ruta, 'negocio/mi-plan');
+$esReportes   = str_starts_with($ruta, 'negocio/reportes');
+$esColaboradores = str_starts_with($ruta, 'negocio/colaboradores');
 $esAdminPagos = str_starts_with($ruta, 'admin/pagos');
 $esAdmin      = session()->get('rol_plataforma') === 'administrador';
 $tieneNegocio = (int) session()->get('id_negocio') > 0;
 $impersonando = session()->get('impersonando') === true;
+$esPropietario = session()->get('rol_negocio') === 'propietario';
+$puedeReportes = false;
+$esPlanPro     = false;
+
+if ($tieneNegocio) {
+    $suscripcionVigente = model(\App\Models\SuscripcionModel::class)
+        ->obtenerVigentePorNegocio((int) session()->get('id_negocio'));
+
+    if ($suscripcionVigente !== null) {
+        $planVigente = model(\App\Models\PlanModel::class)->find((int) $suscripcionVigente['plan_id']);
+
+        if ($planVigente !== null) {
+            $puedeReportes = (int) $planVigente['tiene_reportes'] === 1;
+            $esPlanPro     = ($planVigente['slug'] ?? '') === 'pro'
+                || ($planVigente['max_usuarios'] !== null && (int) $planVigente['max_usuarios'] > 1);
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -507,6 +527,12 @@ $impersonando = session()->get('impersonando') === true;
                 <a href="<?= base_url('negocio/productos') ?>" class="<?= $esProductos ? 'active' : '' ?>">Mis productos</a>
                 <a href="<?= base_url('negocio/pedidos') ?>" class="<?= $esPedidos ? 'active' : '' ?>">Mis Pedidos</a>
                 <a href="<?= base_url('negocio/mi-plan') ?>" class="<?= $esMiPlan ? 'active' : '' ?>">Mi Plan</a>
+                <?php if ($puedeReportes): ?>
+                    <a href="<?= base_url('negocio/reportes') ?>" class="<?= $esReportes ? 'active' : '' ?>">Reportes</a>
+                <?php endif; ?>
+                <?php if ($esPlanPro && $esPropietario): ?>
+                    <a href="<?= base_url('negocio/colaboradores') ?>" class="<?= $esColaboradores ? 'active' : '' ?>">Colaboradores</a>
+                <?php endif; ?>
             <?php endif; ?>
             <?php if ($esAdmin): ?>
                 <a href="<?= base_url('admin/pagos') ?>" class="<?= $esAdminPagos ? 'active' : '' ?>">Pagos</a>

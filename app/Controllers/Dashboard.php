@@ -45,11 +45,19 @@ class Dashboard extends BaseController
             $plan = model(PlanModel::class)->find((int) $suscripcion['plan_id']);
         }
 
+        $tieneReportes = $plan !== null && (int) ($plan['tiene_reportes'] ?? 0) === 1;
+        $esPlanPro     = $plan !== null && (
+            ($plan['slug'] ?? '') === 'pro'
+            || ($plan['max_usuarios'] !== null && (int) $plan['max_usuarios'] > 1)
+        );
+
         return view('dashboard/index', [
-            'negocio'     => $negocio,
-            'suscripcion' => $suscripcion,
-            'plan'        => $plan,
-            'ciudad_slug' => $negocioModel->obtenerCiudadSlug($idNegocio),
+            'negocio'       => $negocio,
+            'suscripcion'   => $suscripcion,
+            'plan'          => $plan,
+            'tiene_reportes' => $tieneReportes,
+            'es_plan_pro'   => $esPlanPro,
+            'ciudad_slug'   => $negocioModel->obtenerCiudadSlug($idNegocio),
         ]);
     }
 }
