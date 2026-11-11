@@ -7,6 +7,27 @@ $etiquetasEstado = [
     'cancelado'  => 'Cancelado',
 ];
 $inicial = mb_strtoupper(mb_substr($nombreComercial, 0, 1));
+
+$logoSrc = null;
+
+if (! empty($logo)) {
+    $rutaLogo = (string) $logo;
+
+    if (is_file($rutaLogo)) {
+        $mime      = @mime_content_type($rutaLogo);
+        $contenido = @file_get_contents($rutaLogo);
+
+        if (is_string($mime)
+            && $contenido !== false
+            && in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)
+        ) {
+            $logoSrc = 'data:' . $mime . ';base64,' . base64_encode($contenido);
+        }
+    } elseif (str_starts_with($rutaLogo, 'data:image/')) {
+        $logoSrc = $rutaLogo;
+    }
+}
+
 $barra = static function (float $valor, float $maximo, string $color = '#0f766e'): string {
     $porcentaje = $maximo > 0 ? min(100, max(0, ($valor / $maximo) * 100)) : 0;
 
@@ -30,22 +51,18 @@ $barra = static function (float $valor, float $maximo, string $color = '#0f766e'
         }
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
         .header-table td { vertical-align: middle; padding: 0; }
-        .logo-cell { width: 76px; }
+        .logo-cell { width: 160px; text-align: center; }
         .logo-box {
             width: 64px;
-            height: 64px;
+            margin: 0 auto;
+            padding: 16px 0;
             border-radius: 12px;
             background-color: #0f766e;
             color: #ffffff;
             font-size: 26px;
             font-weight: bold;
             text-align: center;
-            line-height: 64px;
-        }
-        .logo-image {
-            width: 64px;
-            height: 64px;
-            border-radius: 12px;
+            line-height: 1;
         }
         .brand { font-size: 17px; font-weight: bold; color: #115e59; }
         .report-title { font-size: 13px; font-weight: bold; margin-top: 3px; }
@@ -60,6 +77,7 @@ $barra = static function (float $valor, float $maximo, string $color = '#0f766e'
             border: 1px solid #ccfbf1;
             border-radius: 8px;
             background-color: #f0fdfa;
+            text-align: center;
         }
         .summary-label { color: #64748b; font-size: 8px; text-transform: uppercase; }
         .summary-value { color: #115e59; font-size: 15px; font-weight: bold; margin-top: 2px; }
@@ -96,8 +114,8 @@ $barra = static function (float $valor, float $maximo, string $color = '#0f766e'
     <table class="header-table">
         <tr>
             <td class="logo-cell">
-                <?php if (! empty($logo)): ?>
-                    <img class="logo-image" src="<?= esc($logo, 'attr') ?>" alt="Logo">
+                <?php if ($logoSrc !== null): ?>
+                    <img src="<?= esc($logoSrc, 'attr') ?>" style="display: block; margin: 0 auto; max-width: 150px; height: auto; max-height: 100px; object-fit: contain;" alt="Logo">
                 <?php else: ?>
                     <div class="logo-box"><?= esc($inicial) ?></div>
                 <?php endif; ?>

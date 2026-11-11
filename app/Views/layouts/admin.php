@@ -6,6 +6,7 @@ $ruta    = trim(service('request')->getPath(), '/');
 
 $menu = [
     ['ruta' => 'admin/dashboard', 'label' => 'Dashboard', 'icono' => '◧'],
+    ['ruta' => 'admin/reportes', 'label' => 'Reportes', 'icono' => '▤'],
     ['ruta' => 'admin/ciudades', 'label' => 'Ciudades', 'icono' => '◉'],
     ['ruta' => 'admin/distritos', 'label' => 'Distritos', 'icono' => '⌖'],
     ['ruta' => 'admin/negocios', 'label' => 'Negocios', 'icono' => '▣'],

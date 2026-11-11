@@ -74,6 +74,8 @@ $routes->group('negocio', ['filter' => 'auth'], static function (RouteCollection
 
 $routes->group('admin', ['filter' => ['auth', 'admin']], static function (RouteCollection $routes): void {
     $routes->get('dashboard', 'Admin\Dashboard::index');
+    $routes->get('reportes', 'Admin\Reportes::index');
+    $routes->get('reportes/pdf', 'Admin\Reportes::pdf');
 
     $routes->get('ciudades', 'Admin\Ciudades::index');
     $routes->post('ciudades/(:num)/activar', 'Admin\Ciudades::activar/$1');

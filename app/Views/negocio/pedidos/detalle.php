@@ -144,6 +144,97 @@
         font-size: 0.88rem;
     }
 
+    .page-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .print-only { display: none; }
+
+    @page { margin: 14mm; }
+
+    @media print {
+        body {
+            padding: 0 !important;
+            background: #fff !important;
+            color: #000;
+        }
+
+        body.has-impersonation { padding-top: 0 !important; }
+
+        .impersonation-banner,
+        .topbar,
+        .panel-nav,
+        .logout,
+        .estado-acciones,
+        .page-head,
+        .no-print {
+            display: none !important;
+        }
+
+        .shell {
+            max-width: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .card {
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: #fff;
+            box-shadow: none;
+        }
+
+        .print-only { display: block !important; }
+
+        .print-header {
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #0f172a;
+        }
+
+        .print-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .print-brand img {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+        }
+
+        .print-brand strong {
+            display: block;
+            font-size: 1.15rem;
+        }
+
+        .print-brand span {
+            display: block;
+            color: #475569;
+            font-size: 0.85rem;
+        }
+
+        .resumen-item,
+        .detalle-item {
+            border-color: #cbd5e1;
+            break-inside: avoid;
+        }
+
+        .detalle-list { gap: 6px; }
+
+        .estado-badge {
+            border: 1px solid #0f172a;
+            background: #fff !important;
+            color: #000 !important;
+        }
+
+        .detalle-total strong { color: #000; }
+    }
+
     @media (min-width: 640px) {
         .resumen-grid { grid-template-columns: 1fr 1fr; }
     }
@@ -173,15 +264,33 @@ $fecha   = $pedido['created_at'] !== null
     : '—';
 $direccion = trim((string) ($pedido['cliente_direccion'] ?? ''));
 $comentario = trim((string) ($pedido['comentario'] ?? ''));
+$idNegocio = (int) session()->get('id_negocio');
+$nombreComercial = trim((string) (session()->get('nombre_comercial') ?? ''));
+$logoUrl = $idNegocio > 0 ? base_url('c/logo/' . $idNegocio) : null;
 ?>
 <section class="card">
+    <div class="print-only print-header">
+        <div class="print-brand">
+            <?php if ($logoUrl !== null): ?>
+                <img src="<?= esc($logoUrl, 'attr') ?>" alt="Logo" onerror="this.style.display='none'">
+            <?php endif; ?>
+            <div>
+                <strong><?= esc($nombreComercial !== '' ? $nombreComercial : 'Katalo.pe') ?></strong>
+                <span>Pedido <?= esc($pedido['codigo']) ?> · <?= esc($fecha) ?></span>
+            </div>
+        </div>
+    </div>
+
     <div class="page-head">
         <div>
             <p class="eyebrow">Detalle del pedido</p>
             <h1><?= esc($pedido['codigo']) ?></h1>
             <p class="subtitle">Registrado el <?= esc($fecha) ?></p>
         </div>
-        <a class="btn btn-secondary" href="<?= base_url('negocio/pedidos') ?>">Volver a pedidos</a>
+        <div class="page-actions">
+            <button type="button" class="btn no-print" onclick="window.print()">Imprimir Pedido</button>
+            <a class="btn btn-secondary" href="<?= base_url('negocio/pedidos') ?>">Volver a pedidos</a>
+        </div>
     </div>
 
     <div class="resumen-grid">

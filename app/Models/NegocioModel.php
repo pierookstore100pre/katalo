@@ -156,6 +156,183 @@ class NegocioModel extends Model
     }
 
     /**
+     * @return list<array{ciudad: string, negocios_activos: int, pedidos_mes: int, mrr: float}>
+     */
+    public function obtenerProgresoPorCiudad(): array
+    {
+        $filas = $this->db->query(
+            'SELECT c.id_ciudad, c.nombre AS ciudad,
+                    (
+                        SELECT COUNT(*)
+                        FROM negocios n
+                        JOIN distritos d ON d.id_distrito = n.distrito_id
+                        WHERE d.ciudad_id = c.id_ciudad
+                          AND n.activo = 1
+                          AND n.deleted_at IS NULL
+                    ) AS negocios_activos,
+                    (
+                        SELECT COUNT(*)
+                        FROM pedidos p
+                        JOIN negocios n ON n.id_negocio = p.negocio_id
+                        JOIN distritos d ON d.id_distrito = n.distrito_id
+                        WHERE d.ciudad_id = c.id_ciudad
+                          AND p.deleted_at IS NULL
+                          AND n.deleted_at IS NULL
+                          AND YEAR(p.created_at) = YEAR(CURDATE())
+                          AND MONTH(p.created_at) = MONTH(CURDATE())
+                    ) AS pedidos_mes,
+                    (
+                        SELECT COALESCE(SUM(s.precio_pactado), 0)
+                        FROM suscripciones s
+                        JOIN negocios n ON n.id_negocio = s.negocio_id
+                        JOIN distritos d ON d.id_distrito = n.distrito_id
+                        WHERE d.ciudad_id = c.id_ciudad
+                          AND s.estado = \'activa\'
+                          AND s.deleted_at IS NULL
+                          AND n.deleted_at IS NULL
+                    ) AS mrr
+             FROM ciudades c
+             WHERE c.deleted_at IS NULL
+             ORDER BY c.nombre ASC'
+        )->getResultArray();
+
+        return array_map(static function (array $fila): array {
+            return [
+                'ciudad'           => (string) $fila['ciudad'],
+                'negocios_activos' => (int) $fila['negocios_activos'],
+                'pedidos_mes'      => (int) $fila['pedidos_mes'],
+                'mrr'              => (float) $fila['mrr'],
+            ];
+        }, $filas);
+    }
+
+    /**
+     * @return list<array{plan: string, negocios: int, mrr: float}>
+     */
+    public function obtenerRendimientoPorPlan(): array
+    {
+        $filas = $this->db->query(
+            'SELECT planes.nombre AS plan,
+                    COUNT(s.id_suscripcion) AS negocios,
+                    COALESCE(SUM(s.precio_pactado), 0) AS mrr
+             FROM planes
+             LEFT JOIN suscripciones s
+               ON s.plan_id = planes.id_plan
+              AND s.estado = \'activa\'
+              AND s.deleted_at IS NULL
+             WHERE planes.deleted_at IS NULL
+             GROUP BY planes.id_plan, planes.nombre, planes.precio_mensual
+             ORDER BY planes.precio_mensual ASC, planes.id_plan ASC'
+        )->getResultArray();
+
+        return array_map(static function (array $fila): array {
+            return [
+                'plan'     => (string) $fila['plan'],
+                'negocios' => (int) $fila['negocios'],
+                'mrr'      => (float) $fila['mrr'],
+            ];
+        }, $filas);
+    }
+
+    /**
+     * @return list<array{etiqueta: string, total_negocios: int, mrr: float, total_pedidos: int}>
+     */
+    public function obtenerReporteDinamico(
+        string $agrupar,
+        int $ciudadId = 0,
+        int $planId = 0,
+        int $distritoId = 0,
+        string $metodoPago = ''
+    ): array {
+        $campos = [
+            'ciudad'   => 'c.nombre',
+            'distrito' => 'd.nombre',
+            'plan'     => 'COALESCE(planes.nombre, \'Sin plan\')',
+        ];
+
+        $grupos = [
+            'ciudad'   => 'c.id_ciudad, c.nombre',
+            'distrito' => 'd.id_distrito, d.nombre',
+            'plan'     => 'planes.id_plan, COALESCE(planes.nombre, \'Sin plan\')',
+        ];
+
+        if (! array_key_exists($agrupar, $campos)) {
+            $agrupar = 'ciudad';
+        }
+
+        $campo = $campos[$agrupar];
+        $grupo = $grupos[$agrupar];
+
+        $sql = 'SELECT ' . $campo . ' AS etiqueta,
+                       COUNT(DISTINCT n.id_negocio) AS total_negocios,
+                       COALESCE(SUM(s.precio_pactado), 0) AS mrr,
+                       COALESCE(SUM(p.total_pedidos), 0) AS total_pedidos
+                FROM negocios n
+                JOIN distritos d ON d.id_distrito = n.distrito_id
+                JOIN ciudades c ON c.id_ciudad = d.ciudad_id
+                LEFT JOIN suscripciones s
+                  ON s.negocio_id = n.id_negocio
+                 AND s.estado = \'activa\'
+                 AND s.deleted_at IS NULL
+                LEFT JOIN planes ON planes.id_plan = s.plan_id
+                LEFT JOIN (
+                    SELECT negocio_id, COUNT(*) AS total_pedidos
+                    FROM pedidos
+                    WHERE deleted_at IS NULL
+                      AND MONTH(created_at) = MONTH(CURDATE())
+                      AND YEAR(created_at) = YEAR(CURDATE())
+                    GROUP BY negocio_id
+                ) p ON p.negocio_id = n.id_negocio';
+
+        $parametros        = [];
+        $metodosPagoValidos = ['transferencia', 'yape', 'plin', 'efectivo'];
+
+        if ($metodoPago !== '' && in_array($metodoPago, $metodosPagoValidos, true)) {
+            $sql .= ' JOIN (
+                        SELECT DISTINCT sp.negocio_id
+                        FROM pagos pg
+                        JOIN suscripciones sp ON sp.id_suscripcion = pg.suscripcion_id
+                        WHERE pg.metodo = ?
+                          AND pg.estado = \'confirmado\'
+                          AND pg.deleted_at IS NULL
+                          AND sp.deleted_at IS NULL
+                      ) pago_filtro ON pago_filtro.negocio_id = n.id_negocio';
+            $parametros[] = $metodoPago;
+        }
+
+        $sql .= ' WHERE n.deleted_at IS NULL
+                  AND n.activo = 1';
+
+        if ($ciudadId > 0) {
+            $sql .= ' AND c.id_ciudad = ?';
+            $parametros[] = $ciudadId;
+        }
+
+        if ($planId > 0) {
+            $sql .= ' AND s.plan_id = ?';
+            $parametros[] = $planId;
+        }
+
+        if ($distritoId > 0) {
+            $sql .= ' AND d.id_distrito = ?';
+            $parametros[] = $distritoId;
+        }
+
+        $sql .= ' GROUP BY ' . $grupo . ' ORDER BY mrr DESC, etiqueta ASC';
+
+        $filas = $this->db->query($sql, $parametros)->getResultArray();
+
+        return array_map(static function (array $fila): array {
+            return [
+                'etiqueta'       => (string) $fila['etiqueta'],
+                'total_negocios' => (int) $fila['total_negocios'],
+                'mrr'            => (float) $fila['mrr'],
+                'total_pedidos'  => (int) $fila['total_pedidos'],
+            ];
+        }, $filas);
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     public function obtenerPropietarioActivo(int $idNegocio): ?array

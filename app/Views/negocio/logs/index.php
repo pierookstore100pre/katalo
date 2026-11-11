@@ -199,7 +199,7 @@
                         <th>Fecha</th>
                         <th>Usuario</th>
                         <th>Acción</th>
-                        <th>Tabla</th>
+                        <th>Módulo</th>
                         <th>Descripción</th>
                         <th>IP</th>
                     </tr>
@@ -210,12 +210,14 @@
                         $fecha = $log['created_at'] !== null
                             ? date('d/m/Y H:i:s', strtotime((string) $log['created_at']))
                             : '—';
+                        $tabla  = trim((string) ($log['tabla_afectada'] ?? ''));
+                        $modulo = $tabla !== '' ? ucfirst(str_replace('_', ' ', $tabla)) : '—';
                         ?>
                         <tr>
                             <td data-label="Fecha"><?= esc($fecha) ?></td>
                             <td data-label="Usuario"><?= esc($log['usuario_email'] ?? 'sistema') ?></td>
                             <td data-label="Acción"><span class="log-accion"><?= esc($log['accion']) ?></span></td>
-                            <td data-label="Tabla"><?= esc($log['tabla_afectada'] ?? '—') ?></td>
+                            <td data-label="Módulo"><?= esc($modulo) ?></td>
                             <td data-label="Descripción"><?= esc($log['descripcion'] ?? '—') ?></td>
                             <td data-label="IP"><?= esc($log['ip_address'] ?? '—') ?></td>
                         </tr>
